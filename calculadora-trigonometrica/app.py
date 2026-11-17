@@ -56,29 +56,64 @@ class AppTrigonometriaCompleta:
         self.lbl_resultado = tk.Label(root, text="Aguardando dados...", font=("Courier", 10), justify="left", relief="sunken", bg="#f9f9f9", width=85, height=8);
         self.lbl_resultado.pack(pady=5, padx=40);
 
+    def calcUnicData(self, filled):
+        if "angulo" in filled:
+            degree = filled["angulo"];
+            num, den = self.radConvert(int(degree));
+            print(num, den, sep=" | ");
+            return "radiano", f"{num}π/{den}";
 
-    def calculaDadoUnico(self, preenchidos):
-        if "angulo" in preenchidos:
-            print('entrou');
+    def mdc(self, a, b):
+        while b:
+            a, b = b, a % b;
+        return a
 
+    def radConvert(self, degrees):
+        d = self.mdc(degrees, 180);
+        return degrees // d, 180 //d;
+
+    def simplifyFraction(self, num, den):
+        mdc = self.mdc(num, den);
+        return num // mdc, den // mdc;
+
+    def verifyIntegrity(self, filled):
+        dictErr = {};
+        for index, value in filled:
+            match (index):
+                case "angulo":
+                    if value is not (0 < value < 90):
+                        dictErr = {"err", "o ângulo agudo deve estar entre 0 e 90 graus."};
+
+        if len(filled) < 2 and (filled["angulo"] if filled["angulo"] else None) is not None:
+            dictErr["err"] += "\n Informe mais um dado: outro lado ou um ângulo agudo.";
 
     def executar_calculo(self):
-        campos = [ "angulo", "oposto", "adjacente", "hipotenusa", "seno", "cosseno", "tangente", "cossecante", "secante", "cotangente"];
-
         try:
-            dados = {}
+            data = {};
             for chave, entry in self.entries.items():
                 valor = entry.get().strip();
-                dados[chave] = float(valor) if valor else None;
+                data[chave] = float(valor) if valor else None;
 
-            preenchidos = {k: v for k, v in dados.items() if v is not None}
+            filled = {k: v for k, v in data.items() if v is not None};
+            empties = {};
+            awns = "";
 
-            match len(preenchidos):
+            dictErrIntegrity = self.verifyIntegrity(filled);
+            if (dictErrIntegrity['err'] is not None):
+                raise ValueError(dictErrIntegrity['err']);
+
+            match len(filled):
                 case 1:
-                    self.calculaDadoUnico(preenchidos);
+                    index, awns = self.calcUnicData(filled);
+                    empties[index] = awns;
 
-
-            self.lbl_resultado.config( text=f"Dados informados ({len(preenchidos)}):\n" + ", ".join([f"{k}: {v}" for k, v in preenchidos.items()]) );
+            self.lbl_resultado.config(
+                text=f"Dados informados ({len(filled)}):\n"
+                + ", ".join([f"{k}: {v}" for k, v in filled.items()])
+                + "\n"
+                + f"Dados Calculados({len(empties)}):\n"
+                + ", ".join([f"{i}: {val}" for i, val in empties.items()])
+            )
 
         except ValueError:
             messagebox.showerror("Erro de Entrada", "Por favor, digite apenas números válidos nos campos preenchidos.");
